@@ -1,0 +1,21 @@
+minetest-australopithecus-experiment-ramps
+==========================================
+
+A simple experiment how the world of Minetest can look like with Dwarf Fortress
+like ramps.
+
+These ramps can have two modes (switchable in the parameters.lua file),
+default is the mesh mode, but you can change it to nodeboxes.
+
+The game directory is assumed to have the name "ramps" and it is a subgame, so
+be sure to place it in the correct directory and give it the correct name.
+
+Also note that there is no security mechanism in place to prevent you from
+spawning inside nodes, so use fly/noclip.
+
+
+Known issues
+============
+
+ * Block borders are a problem and yield odd artifacts.
+
