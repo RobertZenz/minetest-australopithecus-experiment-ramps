@@ -80,7 +80,7 @@ minetest.register_on_generated(function(minp, maxp, seed)
 		end
 	end
 	
-	-- And now to the ramps.
+	-- And now do the ramps.
 	local air = minetest.get_content_id("air")
 	local ignore  = minetest.get_content_id("ignore")
 	local test = function(node)
