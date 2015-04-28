@@ -80,11 +80,6 @@ minetest.register_on_generated(function(minp, maxp, seed)
 		end
 	end
 	
-	-- Set the data of the manipulator. Unfortunately we can't set the rotation
-	-- of blocks using the Voxelmanip, so we'll only use it as fastr lookup from
-	-- here on.
-	manipulator:set_data()
-	
 	-- And now to the ramps.
 	local air = minetest.get_content_id("air")
 	local ignore  = minetest.get_content_id("ignore")
@@ -175,10 +170,7 @@ minetest.register_on_generated(function(minp, maxp, seed)
 									dir.x = -1
 								end
 								
-								minetest.set_node({ x = x, y = y, z = z }, {
-									name = ramp.name,
-									param2 = minetest.dir_to_facedir(dir, true)
-								})
+								manipulator:set_node(x, z, y, ramp.id, minetest.dir_to_facedir(dir, true))
 							end
 						end)
 					end
@@ -187,5 +179,7 @@ minetest.register_on_generated(function(minp, maxp, seed)
 		end
 	end
 	stopwatch.stop("rampification")
+	
+	manipulator:set_data()
 end)
 
