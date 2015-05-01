@@ -101,8 +101,8 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	-- And now do the ramps.
 	local air = minetest.get_content_id("air")
 	local ignore  = minetest.get_content_id("ignore")
-	local test = function(node)
-		return node == nil or node == ignore or node == air
+	local is_air = function(node)
+		return node == air
 	end
 	
 	local mask_equals = function(a, b)
@@ -116,6 +116,7 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	local ramps = List:new()
 	ramps:add({
 		id = minetest.get_content_id("ramps:node_ramp"),
+		is_corner = false,
 		-- n f n
 		-- f   f
 		-- n t n
@@ -124,6 +125,7 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	})
 	ramps:add({
 		id = minetest.get_content_id("ramps:node_inner_corner_ramp"),
+		is_corner = true,
 		-- f f f
 		-- f   f
 		-- n f n
@@ -131,14 +133,17 @@ minetest.register_on_generated(function(minp, maxp, seed)
 			{ false, false, false, false, false, false, true, false },
 			{ false, false, false, false, true, false, false, false }
 		},
+		mirror = true,
 		name = "ramps:node_inner_corner_ramp"
 	})
 	ramps:add({
 		id = minetest.get_content_id("ramps:node_outer_corner_ramp"),
+		is_corner = true,
 		-- f f n
 		-- f   t
 		-- n t t
 		mask = { false, false, nil, true, true, true, nil, false },
+		mirror = true,
 		name = "ramps:node_outer_corner_ramp"
 	})
 	
@@ -146,49 +151,84 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	for y = minp.y, maxp.y, 1 do
 		for x = minp.x, maxp.x, 1 do
 			for z = minp.z, maxp.z, 1 do
-				if not test(manipulator:get_node(x, z, y)) then
-					if test(manipulator:get_node(x, z, y + 1)) then
+				if not is_air(manipulator:get_node(x, z, y)) then
+					local above_air = is_air(manipulator:get_node(x, z, y - 1))
+					local below_air = is_air(manipulator:get_node(x, z, y + 1))
+					
+					-- Either have air below or above it, but not both and not neither.
+					if above_air ~= below_air then
 						--  -- ?- +-
 						--  -?    +?
 						--  -+ ?+ ++
 						local node_mask = {
-							test(manipulator:get_node(x - 1, z - 1, y)),
-							test(manipulator:get_node(x, z - 1, y)),
-							test(manipulator:get_node(x + 1, z - 1, y)),
-							test(manipulator:get_node(x + 1, z, y)),
-							test(manipulator:get_node(x + 1, z + 1, y)),
-							test(manipulator:get_node(x, z + 1, y)),
-							test(manipulator:get_node(x - 1, z + 1, y)),
-							test(manipulator:get_node(x - 1, z, y))
+							is_air(manipulator:get_node(x - 1, z - 1, y)),
+							is_air(manipulator:get_node(x, z - 1, y)),
+							is_air(manipulator:get_node(x + 1, z - 1, y)),
+							is_air(manipulator:get_node(x + 1, z, y)),
+							is_air(manipulator:get_node(x + 1, z + 1, y)),
+							is_air(manipulator:get_node(x, z + 1, y)),
+							is_air(manipulator:get_node(x - 1, z + 1, y)),
+							is_air(manipulator:get_node(x - 1, z, y))
 						}
 						
 						ramps:foreach(function(ramp, index)
-							local ramp_rotation = -1
+							local start_index = -1
 							
 							if ramp.masks ~= nil then
 								for index = 1, #ramp.masks, 1 do	
 									local rotation = arrayutil.index(node_mask, ramp.masks[index], mask_equals, 2)
 									if rotation >= 0 then
-										ramp_rotation = rotation
+										start_index = rotation
 									end
 								end
 							else
-								ramp_rotation = arrayutil.index(node_mask, ramp.mask, mask_equals, 2)
+								start_index = arrayutil.index(node_mask, ramp.mask, mask_equals, 2)
 							end
 							
-							if ramp_rotation >= 0 then
-								local dir = { x = 0, y = 0, z = 0 }
+							if start_index >= 0 then
+								local facedir = 0;
+								local axis = rotationutil.POS_Y
+								local rotation = rotationutil.ROT_0
 								
-								if ramp_rotation == 1 then
-									dir.z = -1
-								elseif ramp_rotation == 3 then
-									dir.x = 1
-								elseif ramp_rotation == 5 then
-								elseif ramp_rotation == 7 then
-									dir.x = -1
+								if below_air then
+									if start_index == 1 then
+										rotation = rotationutil.ROT_180
+									elseif start_index == 3 then
+										rotation = rotationutil.ROT_90
+									elseif start_index == 5 then
+										rotation = rotationutil.ROT_0
+									elseif start_index == 7 then
+										rotation = rotationutil.ROT_270
+									end
+								elseif above_air then
+									axis = rotationutil.NEG_Y
+									
+									if ramp.is_corner then
+										if start_index == 1 then
+											rotation = rotationutil.ROT_90
+										elseif start_index == 3 then
+											rotation = rotationutil.ROT_180
+										elseif start_index == 5 then
+											rotation = rotationutil.ROT_270
+										elseif start_index == 7 then
+											rotation = rotationutil.ROT_0
+										end
+									else
+										if start_index == 1 then
+											rotation = rotationutil.ROT_180
+										elseif start_index == 3 then
+											rotation = rotationutil.ROT_270
+										elseif start_index == 5 then
+											rotation = rotationutil.ROT_0
+										elseif start_index == 7 then
+											rotation = rotationutil.ROT_90
+										end
+									end
 								end
 								
-								manipulator:set_node(x, z, y, ramp.id, minetest.dir_to_facedir(dir, true))
+								local facedir = rotationutil.facedir(axis, rotation)
+								
+								manipulator:set_node(x, z, y, ramp.id, facedir)
 							end
 						end)
 					end
