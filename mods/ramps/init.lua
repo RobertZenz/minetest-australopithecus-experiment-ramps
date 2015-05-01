@@ -143,7 +143,7 @@ minetest.register_on_generated(function(minp, maxp, seed)
 							test(manipulator:get_node(x - 1, z + 1, y)),
 							test(manipulator:get_node(x - 1, z, y))
 						}
-						minetest.dir_to_facedir({x=0,y=0,z=1})
+						
 						ramps:foreach(function(ramp, index)
 							local ramp_rotation = -1
 							
