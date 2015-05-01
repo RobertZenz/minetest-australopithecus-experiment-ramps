@@ -37,6 +37,7 @@ dofile(base_path .. "/parameters.lua")
 local nodes = create_and_register_nodes()
 local noise_manager = nil
 local noise_heightmap = nil
+local noise_full = nil
 
 
 -- We'll be giving every player some blocks to place.
@@ -59,23 +60,40 @@ minetest.register_on_generated(function(minp, maxp, seed)
 	if noise_manager == nil then
 		noise_manager = NoiseManager:new()
 		noise_heightmap = noise_manager:get_map2d(5, 0.9, 1, 750)
+		noise_full = noise_manager:get_map3d(5, 0.9, 1, 750)
 	end
 	
 	local placeholder = minetest.get_content_id("ramps:node_heightmap")
 	
 	local manipulator = MapManipulator:new()
 	
-	-- Now we will generate the basic heightmap.
-	local heightmap = noise_heightmap:get2dMap({ x = minp.x, y = minp.z })
-	heightmap = arrayutil.swapped_reindex2d(heightmap, minp.x, minp.z)
-	
-	for x = minp.x, maxp.x, 1 do
-		for z = minp.z, maxp.z, 1 do
-			local height = heightmap[x][z]
-			height = transform.linear(height, -1, 1, -20, 50)
+	if minp.x >= 0 then
+		-- Now we will generate the basic heightmap.
+		local heightmap = noise_heightmap:get2dMap({ x = minp.x, y = minp.z })
+		heightmap = arrayutil.swapped_reindex2d(heightmap, minp.x, minp.z)
+		
+		for x = minp.x, maxp.x, 1 do
+			for z = minp.z, maxp.z, 1 do
+				local height = heightmap[x][z]
+				height = transform.linear(height, -1, 1, -20, 50)
 			
-			for y = minp.y, math.min(height, maxp.y), 1 do
-				manipulator:set_node(x, z, y, placeholder)
+				for y = minp.y, math.min(height, maxp.y), 1 do
+					manipulator:set_node(x, z, y, placeholder)
+				end
+			end
+		end
+	else
+		-- Now we will generate a solid cave structure.		
+		local full = noise_full:get3dMap({ x = minp.x, y = minp.y, z = minp.z })
+		full = arrayutil.swapped_reindex3d(full, minp.x, minp.y, minp.z)
+		
+		for x = minp.x, maxp.x, 1 do
+			for z = minp.z, maxp.z, 1 do
+				for y = minp.y, maxp.y, 1 do
+					if full[x][z][y] >= 1 then
+						manipulator:set_node(x, z, y, placeholder)
+					end
+				end
 			end
 		end
 	end
