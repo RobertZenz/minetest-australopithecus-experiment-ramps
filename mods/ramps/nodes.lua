@@ -27,7 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 local function register_node(name, color, nodebox, mesh)
 	local node = {
 		description = "Node " .. name,
-		
+		light_source = 7,
 		on_punch = function(pos, node, puncher, pointed_thing)
 			minetest.after(0.066, function()
 				minetest.set_node(pos, {
@@ -47,7 +47,6 @@ local function register_node(name, color, nodebox, mesh)
 				fixed = nodebox,
 				type = "fixed"
 			},
-			paramtype = "light",
 			paramtype2 = "facedir"
 		})
 	end
